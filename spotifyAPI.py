@@ -1,10 +1,12 @@
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import sqlite3
+
 # Client ID: 670aabd450884ac4b78a2cdfcc6efb9e
 # Client Secret: 3c6bfedf6ddd4a579cd735ad2bd8b6d6
 
 # Billboard Top 100 Playlist ID: 6UeSakyzhiEt4NB3UAd6NQ
 
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
 
 # Creating spotipy object with credentials
 client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
@@ -34,7 +36,8 @@ def spotipyScouring(track_list):
     return song_dict
 
 
-print(len(spotipyScouring(tracklist)))
+item = spotipyScouring(tracklist)
+print(item.items())
 
 
 
