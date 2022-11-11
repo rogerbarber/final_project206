@@ -14,19 +14,27 @@ sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 # Grabbing track info from playlist stored above (grabbed from Spotify app)
 tracklist = sp.playlist_tracks("6UeSakyzhiEt4NB3UAd6NQ")
-#Structure is dict -> list -> dict -> list -> dict -> list for track URI
-
-#below grabs track name
-print(tracklist['items'][0]['track']['name'])
-#Below grabs artist name from track
-print(tracklist['items'][0]['track']['artists'][0]['name'])
-#Below finds track URI successsfully
-sample_uri = tracklist['items'][0]['track']['uri']
 
 #writing function to grab info and generate dictionary from above information
 
-def spotipyScouring(sp_object):
-    pass
+def spotipyScouring(track_list):
+    song_dict = {}
+    for a in track_list['items']:
+        track_name = a['track']['name']
+        artist_name = a['track']['artists'][0]['name']
+        track_uri = a['track']['uri']
+        song_dict[track_name] = {'Track URI': track_uri,'Artist Name': artist_name}
+        audio_features = sp.audio_features(track_uri)[0].items()
+        for a,b in audio_features:
+            if a == 'type':
+                break
+            song_dict[track_name].update({a:b})
+
+
+    return song_dict
+
+
+print(len(spotipyScouring(tracklist)))
 
 
 
