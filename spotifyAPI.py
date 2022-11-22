@@ -10,6 +10,8 @@ import sqlite3
 # Write function to create artist ID list using id numbers and artist names
 # Inputs: track_list generated from spotipy object for billboard top 100
 # Outputs: dictionary with index, artist name as key, value.
+
+#FIX WITH REGEX TO AVOID BAD TRACK NAMES
 def artistIndex(track_list):
     id_dict = {}
     start = 0
@@ -44,7 +46,22 @@ def spotipyScouring(track_list, artist_index, genre_index, sp):
     song_dict = {}
     rank = 1
     for a in track_list['items']:
-        track_name = a['track']['name']
+        track = a['track']['name']
+        if "Black Panther" in track:
+            track_name = "Lift Me Up"
+        elif "ELVIS" in track:
+            track_name = "Vegas"
+        elif track in song_dict.keys():
+            track_name = track + "(Duplicate)"
+        else:
+            track_name = track
+        # track = a['track']['name']
+        # if "-" in track:
+        #     track2 = track.split("-")[0].rstrip()
+        #     track_name = track2
+        # elif "(" in track:
+        #     track2 = track.split("(")[0].rstrip()
+        #     track_name = track2
         for c in artist_index.items():
             if c[1] == a['track']['artists'][0]['name']:
                  artist_int = c[0]
@@ -73,30 +90,56 @@ def spotipyScouring(track_list, artist_index, genre_index, sp):
 # Current input: Complete dictionary for main table (output of spotipyScouring), integer of start rank (will retrieve that rank and next 24 items)
 # Try using update? Don't want to delete table.
 # Goal output: create table with 25 items, update table with 25 items per run.
-def createSongTable25(song_dict, rank_start):
+
+#FIX TO NOT REQUIRE START RANK
+def createSongTable25(song_dict):
     conn = sqlite3.connect('spotipyTop100.db')
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS Top100 (Rank INTEGER PRIMARY KEY, TrackName TEXT, TrackURI BLOB, ArtistIndex TEXT, GenreIndex INTEGER, Danceability FLOAT, Energy FLOAT, Speechiness FLOAT, Valence FLOAT)")
     conn.commit()
-    check = cur.execute("SELECT Rank FROM Top100")
-    check2 = check.fetchall()
-    if len(check2) < 99:
-        for a,b in song_dict.items():
-            if (b['Rank'] - 1) < (rank_start + 25) and (b['Rank'] - 1) >= rank_start:
-                track_name = a
-                uri = b['Track URI']
-                artist_index = b['Artist Index']
-                genre_index = b['Genre Index']
-                dance = b['danceability']
-                energy = b['energy']
-                speech = b['speechiness']
-                valence = b['valence']
-                song_tup = (b['Rank'], track_name, uri, artist_index, genre_index, dance, energy, speech, valence)
-                cur.execute("INSERT INTO Top100 (Rank, TrackName, TrackURI, ArtistIndex, GenreIndex, Danceability, Energy, Speechiness, Valence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", song_tup)
+    check = cur.execute("SELECT Rank FROM Top100").fetchall()
+    if len(check) == len(song_dict.items()):
+        print("The song table is fully created. Terminating function.")
+        return None
+    if len(check) < 24:
+        print("Initiating song table with first 25 items.")
+        for i in range(1,26):
+            for a,b in song_dict.items():
+                if b['Rank'] == i:
+                    track_name = a
+                    uri = b['Track URI']
+                    artist_index = b['Artist Index']
+                    genre_index = b['Genre Index']
+                    dance = b['danceability']
+                    energy = b['energy']
+                    speech = b['speechiness']
+                    valence = b['valence']
+                    song_tup = (b['Rank'], track_name, uri, artist_index, genre_index, dance, energy, speech, valence)
+                    cur.execute("INSERT INTO Top100 (Rank, TrackName, TrackURI, ArtistIndex, GenreIndex, Danceability, Energy, Speechiness, Valence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", song_tup)
+        conn.commit()
+        conn.close()
     else:
-        print(f"Table or row already exists beginning for row beginning at {rank_start} and 25 rows afterwards (Song Table) - moving on to further operations.")
-    conn.commit()
-    conn.close()
+        print("Song Table has existing items. Beginning from last known index.")
+        try:
+            for i in range(len(check)+1, len(check)+26):
+                for a,b in song_dict.items():
+                    if b['Rank'] == i:
+                        track_name = a
+                        uri = b['Track URI']
+                        artist_index = b['Artist Index']
+                        genre_index = b['Genre Index']
+                        dance = b['danceability']
+                        energy = b['energy']
+                        speech = b['speechiness']
+                        valence = b['valence']
+                        song_tup = (b['Rank'], track_name, uri, artist_index, genre_index, dance, energy, speech, valence)
+                        cur.execute("INSERT INTO Top100 (Rank, TrackName, TrackURI, ArtistIndex, GenreIndex, Danceability, Energy, Speechiness, Valence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", song_tup)
+            conn.commit()
+        except:
+            print("Exceeded index range of available items (Genre Table). Committing current progress and ending function.")
+            conn.commit()
+        conn.close()
+
 
 # Write function to create table for genre id's.
 # Inputs: genre_index dictionary.
@@ -107,8 +150,11 @@ def createGenreTable25(genre_dict):
     cur.execute('CREATE TABLE IF NOT EXISTS GenreIndex (genre_index INTEGER PRIMARY KEY, genre TEXT)')
     conn.commit()
     check = cur.execute("SELECT genre_index, genre FROM GenreIndex").fetchall()
+    if len(check) == len(genre_dict.items()):
+        print("The genre table is fully created. Terminating function.")
+        return None
     if len(check) < 24:
-        print("Initiating table with first 25 items.")
+        print("Initiating genre table with first 25 items.")
         for i in range(25):
             cur.execute("INSERT INTO GenreIndex (genre_index, genre) VALUES (?, ?)",
             (i,genre_dict[i]))
@@ -135,8 +181,11 @@ def createArtistTable25(artist_dict):
     cur.execute('CREATE TABLE IF NOT EXISTS ArtistIndex (artist_index INTEGER PRIMARY KEY, artist TEXT)')
     conn.commit()
     check = cur.execute("SELECT artist_index, artist FROM ArtistIndex").fetchall()
+    if len(check) == len(artist_dict.items()):
+        print("The artist table is fully created. Terminating function.")
+        return None
     if len(check) < 24:
-        print("Initiating table with first 25 items.")
+        print("Initiating artist table with first 25 items.")
         for i in range(25):
             cur.execute("INSERT INTO ArtistIndex (artist_index, artist) VALUES (?, ?)",
             (i,artist_dict[i]))
@@ -168,16 +217,12 @@ def main():
 # Creating track information file (track features)
     track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
 # Creating Genre Index table (25 items at a time max)
-    for i in range(2):
-        createGenreTable25(genre_index)
-
-# Creating Artist Index table (25 items at a time max)
     for i in range(3):
+        createGenreTable25(genre_index)
+# Creating Artist Index table (25 items at a time max)
+    for i in range(5):
         createArtistTable25(artist_index)
-
-# Creating song table (25 items at a time), second input is starting rank accessed.
-    start_rank = 0
-    while start_rank < 100:
-        createSongTable25(track_features, start_rank)
-        start_rank += 25
+# Creating song table (25 items at a time).
+    for i in range(6):
+        createSongTable25(track_features)
 main()
