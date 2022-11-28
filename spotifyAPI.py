@@ -1,6 +1,8 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import sqlite3
+import json
+import re
 
 # Client ID: 670aabd450884ac4b78a2cdfcc6efb9e
 # Client Secret: 3c6bfedf6ddd4a579cd735ad2bd8b6d6
@@ -10,8 +12,6 @@ import sqlite3
 # Write function to create artist ID list using id numbers and artist names
 # Inputs: track_list generated from spotipy object for billboard top 100
 # Outputs: dictionary with index, artist name as key, value.
-
-#FIX WITH REGEX TO AVOID BAD TRACK NAMES
 def artistIndex(track_list):
     id_dict = {}
     start = 0
@@ -46,22 +46,12 @@ def spotipyScouring(track_list, artist_index, genre_index, sp):
     song_dict = {}
     rank = 1
     for a in track_list['items']:
-        track = a['track']['name']
-        if "Black Panther" in track:
-            track_name = "Lift Me Up"
-        elif "ELVIS" in track:
-            track_name = "Vegas"
-        elif track in song_dict.keys():
+        re_track = re.split(" +[(-].{5,}", a['track']['name'])
+        track = re_track[0]
+        if track in song_dict.keys():
             track_name = track + "(Duplicate)"
         else:
             track_name = track
-        # track = a['track']['name']
-        # if "-" in track:
-        #     track2 = track.split("-")[0].rstrip()
-        #     track_name = track2
-        # elif "(" in track:
-        #     track2 = track.split("(")[0].rstrip()
-        #     track_name = track2
         for c in artist_index.items():
             if c[1] == a['track']['artists'][0]['name']:
                  artist_int = c[0]
@@ -86,12 +76,8 @@ def spotipyScouring(track_list, artist_index, genre_index, sp):
     return song_dict
 
 # Runs up to max_rank, 25 in this case, per run.
-# See if possible to use 'fetchall' to grab len and index?
-# Current input: Complete dictionary for main table (output of spotipyScouring), integer of start rank (will retrieve that rank and next 24 items)
-# Try using update? Don't want to delete table.
-# Goal output: create table with 25 items, update table with 25 items per run.
-
-#FIX TO NOT REQUIRE START RANK
+# Current input: Complete dictionary for main table (output of spotipyScouring).
+# Output: create table with 25 items, update table with 25 items per run.
 def createSongTable25(song_dict):
     conn = sqlite3.connect('spotipyTop100.db')
     cur = conn.cursor()
@@ -202,6 +188,67 @@ def createArtistTable25(artist_dict):
             conn.commit()
         conn.close()
 
+# Input: A filename to be written to.
+# Output: A text file that has the average scores for the four music metrics provided by the Spotify track information. No output returned to the program space.
+def scoreAverage(output):
+    conn = sqlite3.connect('spotipyTop100.db')
+    cur = conn.cursor()
+    average = cur.execute("SELECT Danceability, Energy, Speechiness, Valence FROM Top100")
+    average_dict = {}
+    for item in average:
+        average_dict['Danceability'] = average_dict.get('Danceability', 0) + float(item[0])
+        average_dict['Energy'] = average_dict.get('Energy', 0) + float(item[1])
+        average_dict['Speechiness'] = average_dict.get('Speechiness', 0) + float(item[2])
+        average_dict['Valence'] = average_dict.get('Valence', 0) + float(item[3])
+    for key in average_dict:
+        average_dict[key] = round((average_dict.get(key)/100), 3)
+    with open(output, 'w') as handle:
+        j_string = json.dumps(average_dict)
+        handle.write(j_string)
+
+# Input: A filename to be written to.
+# Output: A text file that contains a count of the different genres present in the top 100. The groupings are 'pop', 'rock', 'country', 'hip hop', 'rap', 'indie' - there will also be individual entries if the genre does not exist in these larger sub-groupings.
+def genreCount(output):
+    conn = sqlite3.connect('spotipyTop100.db')
+    cur = conn.cursor()
+    genre_count = cur.execute("SELECT Top100.TrackName, GenreIndex.genre FROM Top100 JOIN GenreIndex ON Top100.GenreIndex = GenreIndex.genre_index")
+    genre_dict = {}
+    for item in genre_count:
+        if "indie" in item[1]:
+            genre_dict['indie'] = genre_dict.get('indie', 0) + 1
+        elif "pop" in item[1]:
+            genre_dict['pop'] = genre_dict.get('pop', 0) + 1
+        elif "rock" in item[1]:
+            genre_dict['rock'] = genre_dict.get('rock', 0) + 1
+        elif 'country' in item[1]:
+            genre_dict['country'] = genre_dict.get('country', 0) + 1
+        elif 'hip hop' in item[1]:
+            genre_dict['hip hop'] = genre_dict.get('hip hop', 0) + 1
+        elif 'rap' in item[1]:
+            genre_dict['rap'] = genre_dict.get('rap', 0) + 1
+        else:
+            genre_dict[item[1]] = genre_dict.get(item[1], 0) + 1
+    with open(output, 'w') as handle:
+        j_string = json.dumps(genre_dict)
+        handle.write(j_string)
+
+# Input: A filename to write to.
+# Output: a text file that has a count of how many songs in the top 100 belong to a certain artist. Nothing is returned to the program space.
+def artistCount(output):
+    conn = sqlite3.connect('spotipyTop100.db')
+    cur = conn.cursor()
+    artist_count = cur.execute("SELECT Top100.TrackName, ArtistIndex.artist FROM Top100 JOIN ArtistIndex ON Top100.ArtistIndex = ArtistIndex.artist_index")
+    artist_dict = {}
+    for item in artist_count:
+        artist_dict[item[1]] = artist_dict.get(item[1], 0) + 1
+    return artist_dict
+
+       
+
+
+
+
+
 
 def main():
 # Creating spotipy object with credentials
@@ -225,4 +272,13 @@ def main():
 # Creating song table (25 items at a time).
     for i in range(6):
         createSongTable25(track_features)
+# Selecting data from tables (3 tables to pull from)
+# Expecting multiple functions for multiple files, calculating a few things.
+# Calculating average of music category scores and writing to file.
+    scoreAverage("scoreAverage.json")
+# Calculating count of genres, sorted by main genre (when possible).
+    genreCount("genreCount.json")
+# Calculating count of songs by certain artists on the top 100.
+    print(artistCount("artistCount.json"))
+
 main()
