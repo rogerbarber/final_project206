@@ -88,7 +88,7 @@ def createSongTable25(song_dict):
     check = cur.execute("SELECT Rank FROM Top100").fetchall()
     if len(check) == len(song_dict.items()):
         print("The song table is fully created. Terminating function.")
-        return None
+        return True
     if len(check) < 24:
         print("Initiating song table with first 25 items.")
         for i in range(1,26):
@@ -128,6 +128,19 @@ def createSongTable25(song_dict):
             conn.commit()
         conn.close()
 
+#Creating function to run genre, artist, and song table in order. 25 items max.
+#Input: genre_index, artist_index, track_features dictionaries.
+#Output: three tables. nothing returned to program space.
+def tableWriter25(artist_index, genre_index, track_features):
+    a = createGenreTable25(genre_index)
+    b = None
+    if a == True:
+        b = createArtistTable25(artist_index)
+    if b == True:
+        createSongTable25(track_features)
+    return print("----------------------")
+    
+
 
 # Write function to create table for genre id's.
 # Inputs: genre_index dictionary.
@@ -140,7 +153,7 @@ def createGenreTable25(genre_dict):
     check = cur.execute("SELECT genre_index, genre FROM GenreIndex").fetchall()
     if len(check) == len(genre_dict.items()):
         print("The genre table is fully created. Terminating function.")
-        return None
+        return True
     if len(check) < 24:
         print("Initiating genre table with first 25 items.")
         for i in range(25):
@@ -171,7 +184,7 @@ def createArtistTable25(artist_dict):
     check = cur.execute("SELECT artist_index, artist FROM ArtistIndex").fetchall()
     if len(check) == len(artist_dict.items()):
         print("The artist table is fully created. Terminating function.")
-        return None
+        return True
     if len(check) < 24:
         print("Initiating artist table with first 25 items.")
         for i in range(25):
@@ -188,10 +201,10 @@ def createArtistTable25(artist_dict):
         except:
             print("Exceeded index range of available items (Artist Table). Committing current progress and ending function.")
             conn.commit()
-        conn.close()
+            conn.close()
 
 
-def main():
+def main1():
 # Creating spotipy object with credentials
     client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
 # THIS IS YOUR OBJECT BELOW
@@ -204,11 +217,8 @@ def main():
     artist_index = artistIndex(tracklist)
 # Creating track information file (track features)
     track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
-# Creating Genre Index table (25 items at a time max)
-    createGenreTable25(genre_index)
-# Creating Artist Index table (25 items at a time max)
-    createArtistTable25(artist_index)
-# Creating song table (25 items at a time).
-    createSongTable25(track_features)
+# Writing 25 items to each table, beginning with genre_index.
+    tableWriter25(artist_index, genre_index, track_features)
 
-main()
+
+main1()

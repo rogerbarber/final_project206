@@ -7,7 +7,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-
 # Input: A filename to be written to.
 # Output: A text file that has the average scores for the four music metrics provided by the Spotify track information. No output returned to the program space.
 def scoreAverage(output):
@@ -85,6 +84,45 @@ def bar_graph(filename):
 
 # Input: a filename to pull information from in order to create a pie chart. Designed for artistCount function.
 # Output: Shows a plot of the pie chart. Saves a picture of the pie chart as an image file in the file directory. Nothing returned to program space.
+def pie_chart(filename):
+    with open(filename, 'r') as handle:
+        string = handle.read()
+        j_dict = json.loads(string)
+        new_dict = {}
+        for a,b in j_dict.items():
+            if b < 2:
+                new_dict['Single Song'] = new_dict.get("Single Song", 0) + 1
+            else:
+                new_dict[a] = b
+        artists = []
+        counts = []
+        for a, b in new_dict.items():
+            artists.append(a)
+            counts.append(b)
+        fig, ax = plt.subplots()
+        ax.pie(counts, labels=artists, shadow=True)
+        ax.axis('equal')
+        plt.show()
+        fig.savefig("artistCountPieChart.png")
+
+#Input: a filename to pull data from for making a horizontal bar chart. Designed for genre count.
+#Output: shows a plot within the program space, and saves an image to the directory.
+def barh_chart(filename):
+    with open(filename, "r") as handle:
+        string = handle.read()
+        j_dict = json.loads(string)
+        genres = []
+        counts = []
+        for a,b in j_dict.items():
+            genres.append(a)
+            counts.append(b)
+        fig = plt.figure(figsize=(10,10))
+        plt.subplot(111)
+        plt.title("Top 100 - Genre Composition")
+        plt.barh(genres,counts)
+        plt.show()
+        fig.savefig("genreCountBarH.png")
+        
 
 
 
@@ -99,6 +137,9 @@ def main():
     artistCount("artistCount.json")
 # Plotting information from written files.
     bar_graph("scoreAverage.json")
+    pie_chart("artistCount.json")
+    barh_chart("genreCount.json")
+
 
 
 main()
