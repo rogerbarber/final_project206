@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
+
 # Input: A filename to be written to.
 # Output: A text file that has the average scores for the four music metrics provided by the Spotify track information. No output returned to the program space.
 def scoreAverage(output):
@@ -126,7 +127,7 @@ def barh_chart(filename):
 
 
 
-def main():
+def main2():
 # Selecting data from tables (3 tables to pull from)
 # Expecting multiple functions for multiple files, calculating a few things.
 # Calculating average of music category scores and writing to file.
@@ -142,4 +143,4 @@ def main():
 
 
 
-main()
+main2()

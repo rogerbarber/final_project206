@@ -132,12 +132,9 @@ def createSongTable25(song_dict):
 #Input: genre_index, artist_index, track_features dictionaries.
 #Output: three tables. nothing returned to program space.
 def tableWriter25(artist_index, genre_index, track_features):
-    a = createGenreTable25(genre_index)
-    b = None
-    if a == True:
-        b = createArtistTable25(artist_index)
-    if b == True:
-        createSongTable25(track_features)
+    createGenreTable25(genre_index)
+    createArtistTable25(artist_index)
+    createSongTable25(track_features)
     return print("----------------------")
     
 
@@ -205,20 +202,39 @@ def createArtistTable25(artist_dict):
 
 
 def main1():
+# Creating DB file
+    try:
+        with open("spotipyTop100.db", "r") as handle:
 # Creating spotipy object with credentials
-    client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
+            client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
 # THIS IS YOUR OBJECT BELOW
-    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 # Grabbing track info from playlist stored above (grabbed from Spotify app)
-    tracklist = sp.playlist_tracks("6UeSakyzhiEt4NB3UAd6NQ")
+            tracklist = sp.playlist_tracks("6UeSakyzhiEt4NB3UAd6NQ")
 # Creating a genre index file
-    genre_index = genreIndex(tracklist, sp)
+            genre_index = genreIndex(tracklist, sp)
 # Creating artist index file
-    artist_index = artistIndex(tracklist)
+            artist_index = artistIndex(tracklist)
 # Creating track information file (track features)
-    track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
+            track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
 # Writing 25 items to each table, beginning with genre_index.
-    tableWriter25(artist_index, genre_index, track_features)
+            tableWriter25(artist_index, genre_index, track_features)
+    except:
+        with open("spotipyTop100.db", "w") as handle:
+# Creating spotipy object with credentials
+            client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
+# THIS IS YOUR OBJECT BELOW
+            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+# Grabbing track info from playlist stored above (grabbed from Spotify app)
+            tracklist = sp.playlist_tracks("6UeSakyzhiEt4NB3UAd6NQ")
+# Creating a genre index file
+            genre_index = genreIndex(tracklist, sp)
+# Creating artist index file
+            artist_index = artistIndex(tracklist)
+# Creating track information file (track features)
+            track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
+# Writing 25 items to each table, beginning with genre_index.
+            tableWriter25(artist_index, genre_index, track_features)
 
 
 main1()
