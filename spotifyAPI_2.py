@@ -103,7 +103,7 @@ def pie_chart(filename):
             artists.append(a)
             counts.append(b)
         fig, ax = plt.subplots()
-        ax.pie(counts, labels=artists, shadow=True)
+        ax.pie(counts, labels=artists, shadow=True, autopct='%1.1f%%')
         ax.axis('equal')
         plt.show()
         fig.savefig("artistCountPieChart.png")
