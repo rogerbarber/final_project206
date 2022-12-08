@@ -79,7 +79,9 @@ def bar_graph(filename):
         fig = plt.figure(figsize=(8, 8))
         plt.subplot(111)
         plt.title("Top 100 Songs - Average Audio Scores")
-        plt.bar(x,y, color=['red', 'blue', 'green', 'yellow'])
+        plt.xlabel("Song Metric Categories")
+        plt.ylabel("Counts (0.0 to 1.0)")
+        plt.bar(x,y, color=['lightcoral', 'blue', 'green', 'aquamarine'])
         plt.show()
         fig.savefig("scoreAverageGraph.png")
 
