@@ -236,4 +236,6 @@ def main1():
             track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
 # Writing 25 items to each table, beginning with genre_index.
             tableWriter25(artist_index, genre_index, track_features)
+
+main1()
             
