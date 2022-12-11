@@ -145,7 +145,3 @@ def main2():
     bar_graph("scoreAverage.json")
     pie_chart("artistCount.json")
     barh_chart("genreCount.json")
-
-
-
-main2()
