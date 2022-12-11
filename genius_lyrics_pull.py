@@ -114,7 +114,7 @@ def find_top_ten(word_counts):
 def store_top_words(cur, conn, top_ten_words):
     cur.execute("CREATE TABLE IF NOT EXISTS wordIndex (id INTEGER PRIMARY KEY, word TEXT)")
     check = cur.execute("SELECT max(id) FROM wordIndex").fetchone()
-    print(check)
+    #print(check)
     if check[0] == None:
         print("Word Index table is empty, establishing data for first 25 songs")
         accumulate = {}
@@ -129,17 +129,17 @@ def store_top_words(cur, conn, top_ten_words):
                         continue
         
         for index, word in accumulate.items(): 
-            print (index, word)
+            #print (index, word)
             cur.execute("INSERT OR IGNORE INTO wordIndex (id, word) VALUES (?, ?)", (index, word))
         conn.commit()
     else:
         wordtuples = cur.execute("SELECT id, word FROM wordIndex").fetchall()
         count = len(wordtuples) - 1
-        print(count)
+        #print(count)
         word_dict = {}
         for word in wordtuples:
             word_dict[word[0]] = word[1]
-        print(word_dict)
+        #print(word_dict)
         print("Word Index table is already established, storing data starting at ID " + str(count +1))
         for rank, songname in top_ten_words.items():
             for song, wordlist in songname.items():
@@ -147,9 +147,9 @@ def store_top_words(cur, conn, top_ten_words):
                         if wordlist[i][0] not in word_dict.copy().values():
                             count += 1
                             word_dict[count] = wordlist[i][0]
-                            print(count, wordlist[i][0])
+                            #print(count, wordlist[i][0])
                             cur.execute("INSERT OR IGNORE INTO wordIndex (id, word) VALUES (?, ?)", (count, wordlist[i][0]))
-                            print("Inserted " + wordlist[i][0] + " into id position " + str(count) + " in table wordIndex")
+                            #print("Inserted " + wordlist[i][0] + " into id position " + str(count) + " in table wordIndex")
                         else:
                             continue
     conn.commit()            
@@ -166,9 +166,9 @@ def make_songwordrelation_table(cur, conn, top_ten):
                 #print(word_id)
                 #print(song_rank)
                 if word_id != None:
-                    print("This is the word id", word_id[0])
-                    print("This is the rank", song_rank[0])
-                    print("This is the count", wordlist[i][1])
+                    #print("This is the word id", word_id[0])
+                    #print("This is the rank", song_rank[0])
+                    #print("This is the count", wordlist[i][1])
                     cur.execute("INSERT INTO songWordRelation (song_rank, word_id, count) VALUES (?, ?, ?)", (song_rank[0], word_id[0], wordlist[i][1]))
                 
     conn.commit()
