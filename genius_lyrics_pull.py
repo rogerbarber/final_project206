@@ -199,4 +199,4 @@ def main():
     #Create Song to Words table
     make_songwordrelation_table(cur, conn, top_ten)
 
-main()
+#main()
