@@ -2,96 +2,75 @@ import lyricsgenius as lg
 import json
 import re
 import sqlite3
-import os
-
 
 API_KEY = "CUAq9PoXth-VccgEW1vqALmmefhkarPZI3DgyYPJLOfsKVrPvaN3YLJz4wmFdmSQ"
 
-def read_json(cache_filename):
-    #attempts to open json cache else initiates empty dictionary. 
+def pull_songdata(cur, con, length = 0):
+    song_info = cur.execute("SELECT Top100.rank, Top100.TrackName, ArtistIndex.artist \
+        From Top100 JOIN ArtistIndex ON Top100.ArtistIndex = ArtistIndex.artist_index")
+    song_dict = {}
 
-    try:
-        with open(cache_filename, 'r') as data_r:
-            j_dict = json.loads(data_r.read())
-            return j_dict
-    except:
-        j_dict = {}
-        return j_dict
+    song = song_info.fetchall()
+    #print(song)
 
-def write_json(cache_filename, dict):
-    #write json data to file using json indent 4 structure
+    check = cur.execute("SELECT max(Rank) FROM Top100").fetchone()
+    #print(type(check[0]))
+    if check[0] == 0:
+        for i in range(1, check[0] + 26):
+            song = song_info.fetchone()
+            #print(song)
 
-    with open(cache_filename, 'w') as data_w:
-        data_w.write(json.dumps(dict, indent = 4))
+            if song[2] not in song_dict:
+                song_dict[song[2]] = [(song[0], song[1])]
+            else:
+                song_dict[song[2]] += [(song[0], song[1])]
+        return song_dict
+    else:
+        for i in range(check[0] - 25, check[0]): #Change back to check[0] - 25, check[0]
+            dict_song = song[i]
+            #print(dict_song)
 
-def pull_songdata():
-    # Pulls song data from spotipyTop100.db
-    # Joins Top100 to ArtistIndex and pairs the song data with the artist who produced it. 
-    # Returns a dictionary of artist names with a list of their respective songs.
-    conn = sqlite3.connect("spotipyTop100.db")
-    cur = conn.cursor()
-    track_object = cur.execute("SELECT ArtistIndex, TrackName FROM Top100")
-    tracks = track_object.fetchall()
-    artist_object = cur.execute("SELECT Artist_Index, Artist From ArtistIndex")
-    artists = artist_object.fetchall()
+            if song[i][2] not in song_dict:
+                #print(song[i][2])
+                song_dict[song[i][2]] = [(song[i][0], song[i][1])]
+            else:
+                song_dict[song[i][2]] += [(song[i][0], song[i][1])]
+        #print(song_dict)
+        return song_dict
 
-    track_dict = {}
-    artist_dict = {}
-
-    for i in tracks:
-        if i[0] not in track_dict:
-            track_dict[i[0]] = [i[1]]
-        else:
-            track_dict[i[0]].append(i[1])
-
-    for k, v in track_dict.items():
-        for i in artists:
-            if int(k) == i[0]:
-                artist_dict[i[1]] = v
-    
-    conn.close()
-    print("pull_songdata working")
-    return artist_dict
-
-def lyric_search(genius, artist_dict, cache):
+def lyric_search(genius, song_dict):
     lyrics_dict = {}
     pattern = r" +[-(].{5,}"
 
+    for artist, songs in song_dict.items():
+        lyrics_dict[artist] = {}
+        for songname in songs:
+            lyrics_dict[artist][songname[1]] = {}
+            try:
+                song = genius.search_song(songname[1], artist)
+            except:
+                print("Search failed, skip ",songname[1])
+            lyrics_dict[artist][songname[1]] = song.lyrics
+    #print(lyrics_dict)       
+    return lyrics_dict
 
-    if len(cache) > 1:
-        print("Lyrics cache already established.")
-        return None
-    else:
-        try:
-            print("Establishing lyrics cache.")
-            for k, v in artist_dict.items():
-                lyrics_dict[k] = {}
-                for i in range(len(v)):
-                    lyrics_dict[k][v[i]] = {}
-                    cleaned_song_name = re.split(pattern, v[i])
-                    song = genius.search_song(cleaned_song_name[0], k)
-                    lyrics_dict[k][v[i]] = song.lyrics 
-
-            return lyrics_dict
-        except:
-            print("Exception!")
-            return None
-
-def clean_and_count_lyrics(cache):
-
+def clean_and_count_lyrics(data_packet):
     word_counts = {}
-    ignore_lst = ['the', 'and', 'be', 'for', 'to', '', 'am', 'a', 'how', 'in', 'of', 'who', 'what', \
-                  'where', 'why', 'when', 'this', 'that', 'there', 'is', 'isn\'t', 'was', 'wasn\'t', \
-                  'it', 'oh', 'mm', 'on', 'it\'s', 'at', 'ah', 'yeah',   ]
+    ignore_lst = ['the', 'and', 'be', 'for', 'to', '', 'am', 'a', 'how', 'in', 'of', \
+                  'this', 'that', 'there', 'is', 'isn\'t', 'was', 'wasn\'t', \
+                  'it', 'oh', 'mm', 'on', 'it\'s', 'at', 'ah', 'i', 'me', 'we', 'you', \
+                  'i\'m', 'you\'re',]
     lyric_lead_pattern = r".*[lL]yrics+"
     section_header_pattern = r"\[.*?\]"
     embed_msg_pattern = r"You might also like*[\d]*|Embed|\dEmbed"
 
-    for artist, song in cache.items():
+    #print(data_packet)
+
+    for artist, song in data_packet.items():
         for songname, lyrics in song.items():
+            #print(str(lyrics))
             word_counts[songname] = {}
-            
-            string_clean_one = lyrics.replace("\n", " ")
+            string_clean_one = str(lyrics).replace("\n", " ")
             string_clean_two = re.sub(section_header_pattern, " ", string_clean_one)
             string_clean_three = re.sub(lyric_lead_pattern, " ", string_clean_two)
             string_clean_four = re.sub(embed_msg_pattern, " ", string_clean_three)
@@ -103,12 +82,8 @@ def clean_and_count_lyrics(cache):
             string_clean_ten = string_clean_nine.replace(',', '')
             string_clean_eleven = string_clean_ten.replace('?', '')
 
-            #print(word_counts)
-
-
             cleaned_lyrics_lst = string_clean_eleven.split(" ")
-            #print(cleaned_lyrics_lst)
-            
+                
             for word in cleaned_lyrics_lst:
                 if word.lower() in ignore_lst:
                     continue
@@ -117,54 +92,117 @@ def clean_and_count_lyrics(cache):
                         word_counts[songname][word.lower()] = 1
                     else:
                         word_counts[songname][word.lower()] += 1
-                    
+
     #print(word_counts)
     return word_counts
 
 def find_top_ten(word_counts):
     top_ten_words = {}
+    rank = 1
 
     for songname, words in word_counts.items():
-        top_ten_words[songname] = []
+        top_ten_words[rank]={}
+        top_ten_words[rank][songname] = []
         sorted_words = sorted(words.items(), key = lambda word: word[1], reverse = True)
 
-        top_ten_words[songname] = sorted_words[:10]
+        top_ten_words[rank][songname] = sorted_words[:10]
 
-    print(top_ten_words)
+        rank += 1
+    #print(top_ten_words)
     return top_ten_words
-    
+
+def store_top_words(cur, conn, top_ten_words):
+    cur.execute("CREATE TABLE IF NOT EXISTS wordIndex (id INTEGER PRIMARY KEY, word TEXT)")
+    check = cur.execute("SELECT max(id) FROM wordIndex").fetchone()
+    print(check)
+    if check[0] == None:
+        print("Word Index table is empty, establishing data for first 25 songs")
+        accumulate = {}
+        count = 0
+        for rank, songname in top_ten_words.items():
+            for song, wordlist in songname.items():
+                for i in range(len(wordlist)):
+                    if wordlist[i][0] not in accumulate.values():
+                        accumulate[count] = wordlist[i][0]
+                        count += 1
+                    else:
+                        continue
+        
+        for index, word in accumulate.items(): 
+            print (index, word)
+            cur.execute("INSERT OR IGNORE INTO wordIndex (id, word) VALUES (?, ?)", (index, word))
+        conn.commit()
+    else:
+        wordtuples = cur.execute("SELECT id, word FROM wordIndex").fetchall()
+        count = len(wordtuples) - 1
+        print(count)
+        word_dict = {}
+        for word in wordtuples:
+            word_dict[word[0]] = word[1]
+        print(word_dict)
+        print("Word Index table is already established, storing data starting at ID " + str(count +1))
+        for rank, songname in top_ten_words.items():
+            for song, wordlist in songname.items():
+                    for i in range(len(wordlist)):
+                        if wordlist[i][0] not in word_dict.copy().values():
+                            count += 1
+                            word_dict[count] = wordlist[i][0]
+                            print(count, wordlist[i][0])
+                            cur.execute("INSERT OR IGNORE INTO wordIndex (id, word) VALUES (?, ?)", (count, wordlist[i][0]))
+                            print("Inserted " + wordlist[i][0] + " into id position " + str(count) + " in table wordIndex")
+                        else:
+                            continue
+    conn.commit()            
+    top_ten = top_ten_words
+    return top_ten
+
+def make_songwordrelation_table(cur, conn, top_ten):
+    cur.execute("CREATE TABLE IF NOT EXISTS songWordRelation (song_rank INTEGER, word_id INTEGER, count INTEGER)")
+    for rank, songname in top_ten.items():
+        for song, wordlist in songname.items():
+            for i in range(len(wordlist)):
+                word_id = cur.execute("SELECT id from wordIndex Where word = ?", (wordlist[i][0],)).fetchone()
+                song_rank = cur.execute("SELECT Rank from Top100 Where TrackName = ?", (song,)).fetchone()
+                #print(word_id)
+                #print(song_rank)
+                if word_id != None:
+                    print("This is the word id", word_id[0])
+                    print("This is the rank", song_rank[0])
+                    print("This is the count", wordlist[i][1])
+                    cur.execute("INSERT INTO songWordRelation (song_rank, word_id, count) VALUES (?, ?, ?)", (song_rank[0], word_id[0], wordlist[i][1]))
+                
+    conn.commit()
+
 def main():
-    # Genius_api session
+    #Genius api session
     genius = lg.Genius(API_KEY)
 
-    # Substantiates path for cache
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    cache_filename = dir_path + '/' + "cache_lyrics.json"
+    #Database connection and cursor
+    conn = sqlite3.connect("spotipyTop100.db")
+    cur = conn.cursor()
 
-    # Reads cache via read_json
-    cache = read_json(cache_filename)
+    #Pull song info from spotipy database
+    song_dict = pull_songdata(cur, conn)
 
-    # Pull Track dictionary that includes {'Artist': ['Songs", '...'], ...}
-    tracks = pull_songdata()
+    #Lyric Search
+    lyrics = lyric_search(genius, song_dict)
 
-    # Perform API call and lyrics search on tracks from pull_songdata()
-    lyrics = lyric_search(genius, tracks, cache)
-    print(lyrics)
+    #Clean and count lyrics
+    word_counts = clean_and_count_lyrics(lyrics)
 
-    # Write newly created dictionary to the json cache
-    if lyrics == None:
-        print("cache already established")
-    else:
-        write_json(cache_filename, lyrics)
+    #Find the top ten across all songs
+    top_ten_all_songs = find_top_ten(word_counts)
 
-    # Clean_lyric information for processing, convert to lists of words
-    cleaned = clean_and_count_lyrics(cache)
+    #Stores Top Words in Table
+    top_ten = store_top_words(cur, conn, top_ten_all_songs)
 
-    # Sort word counts by value
-    sorted_words = find_top_ten(cleaned)
+    #Create Song to Words table
+    make_songwordrelation_table(cur, conn, top_ten)
+
+    #Total word counts across entire dataset
+    #total_words = dataset_word_counts(top_ten_all_songs)
+
+    #Groom data for database insert
+    #data = groom_data_for_database(top_ten_all_songs, total_words, cur, conn)
 
 main()
-
-"""if __name__ == "__main__":
-    main()
-    unittest.main(verbosity=2) """   
