@@ -206,7 +206,8 @@ def main1():
     try:
         with open("spotipyTop100.db", "r") as handle:
 # Creating spotipy object with credentials
-            client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
+            #client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6") #Roger's Credentials
+            client_credentials_manager = SpotifyClientCredentials(client_id="ade67baf2a6d49d58acbeed243f524e4", client_secret="d128c210ee9946aea6d78f87f3d44881") #Alex's Credentials
 # THIS IS YOUR OBJECT BELOW
             sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 # Grabbing track info from playlist stored above (grabbed from Spotify app)
@@ -223,7 +224,8 @@ def main1():
     except:
         with open("spotipyTop100.db", "w") as handle:
 # Creating spotipy object with credentials
-            client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
+            #client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6") #Roger's Credentials
+            client_credentials_manager = SpotifyClientCredentials(client_id="ade67baf2a6d49d58acbeed243f524e4", client_secret="d128c210ee9946aea6d78f87f3d44881") #Alex's Credentials
 # THIS IS YOUR OBJECT BELOW
             sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 # Grabbing track info from playlist stored above (grabbed from Spotify app)
@@ -236,4 +238,5 @@ def main1():
             track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
 # Writing 25 items to each table, beginning with genre_index.
             tableWriter25(artist_index, genre_index, track_features)
+#main1()
             
