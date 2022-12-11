@@ -105,6 +105,7 @@ def pie_chart(filename):
         fig, ax = plt.subplots()
         ax.pie(counts, labels=artists, shadow=True, autopct='%1.1f%%')
         ax.axis('equal')
+        plt.title("Ratio of Single Songs to Multiple Songs on Hot 100")
         plt.show()
         fig.savefig("artistCountPieChart.png")
 
@@ -119,9 +120,11 @@ def barh_chart(filename):
         for a,b in j_dict.items():
             genres.append(a)
             counts.append(b)
-        fig = plt.figure(figsize=(10,10))
+        fig = plt.figure(figsize=(20,10))
         plt.subplot(111)
         plt.title("Top 100 - Genre Composition")
+        plt.xlabel("Number of Songs")
+        plt.ylabel("Genres")
         plt.barh(genres,counts)
         plt.show()
         fig.savefig("genreCountBarH.png")
@@ -142,7 +145,3 @@ def main2():
     bar_graph("scoreAverage.json")
     pie_chart("artistCount.json")
     barh_chart("genreCount.json")
-
-
-
-main2()
