@@ -124,7 +124,7 @@ def createSongTable25(song_dict):
                         cur.execute("INSERT INTO Top100 (Rank, TrackName, TrackURI, ArtistIndex, GenreIndex, Danceability, Energy, Speechiness, Valence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", song_tup)
             conn.commit()
         except:
-            print("Exceeded index range of available items (Genre Table). Committing current progress and ending function.")
+            print("Exceeded index range of available items (Song Table). Committing current progress and ending function.")
             conn.commit()
         conn.close()
 
@@ -225,7 +225,7 @@ def main1():
 # Creating spotipy object with credentials
             client_credentials_manager = SpotifyClientCredentials(client_id="670aabd450884ac4b78a2cdfcc6efb9e", client_secret="3c6bfedf6ddd4a579cd735ad2bd8b6d6")
 # THIS IS YOUR OBJECT BELOW
-            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager, backoff_factor=0)
 # Grabbing track info from playlist stored above (grabbed from Spotify app)
             tracklist = sp.playlist_tracks("6UeSakyzhiEt4NB3UAd6NQ")
 # Creating a genre index file
@@ -236,6 +236,4 @@ def main1():
             track_features = spotipyScouring(tracklist, artist_index, genre_index, sp)
 # Writing 25 items to each table, beginning with genre_index.
             tableWriter25(artist_index, genre_index, track_features)
-
-main1()
-            
+        
