@@ -37,8 +37,8 @@ def get_top_ten_of_all(song_word_dict):
                     word_dict[wordlist[i][0]] = wordlist[i][1]
                 else:
                     word_dict[wordlist[i][0]] += wordlist[i][1]
+    
     sorted_top_words = sorted(word_dict.items(), key = lambda x: x[1], reverse = True)
-
     dataset_top_ten = sorted_top_words[:10]
 
     #print(dataset_top_ten)
@@ -55,7 +55,7 @@ def plot_data():
         j_string = data.read()
         top_ten = json.loads(j_string)
 
-        print(top_ten)
+        #print(top_ten)
         x = []
         y = []
 
@@ -88,4 +88,4 @@ def main():
     #plot data
     plot_data()
 
-#main()
+main()
