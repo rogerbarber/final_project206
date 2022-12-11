@@ -41,6 +41,6 @@ def main():
     cur = conn.cursor()
 
     #Collect data from database and find the top 10 words of all songs
-    top_words = get_top_ten_of_all(cur, conn)
+    top_words = get_top_ten_of_each(cur, conn)
 
 main()

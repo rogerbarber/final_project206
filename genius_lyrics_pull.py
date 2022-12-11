@@ -199,10 +199,4 @@ def main():
     #Create Song to Words table
     make_songwordrelation_table(cur, conn, top_ten)
 
-    #Total word counts across entire dataset
-    #total_words = dataset_word_counts(top_ten_all_songs)
-
-    #Groom data for database insert
-    #data = groom_data_for_database(top_ten_all_songs, total_words, cur, conn)
-
 main()
